@@ -62,6 +62,7 @@
 // TODO: This could be done using the macros defined by the toolchain in the compilation (much more elegant)
 #define PYNQ 1
 #define ZCU  2
+#define AU250  3
 #ifndef BOARD
     #define BOARD ZCU
 #endif

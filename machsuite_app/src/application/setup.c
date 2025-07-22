@@ -43,6 +43,9 @@
 	#elif BOARD == PYNQ
 		#define MONITOR_POWER_SAMPLES  (65536)
 		#define MONITOR_TRACES_SAMPLES (16384)
+	#elif BOARD == AU250
+		#define MONITOR_POWER_SAMPLES  (100)
+		#define MONITOR_TRACES_SAMPLES (16384)
 #endif
 
 	#if TRACES_RAM
@@ -82,6 +85,8 @@ const char * __shm_directory(size_t * len)
 	#define NUM_SLOTS 8
 #elif BOARD == PYNQ
 	#define NUM_SLOTS 4
+#elif BOARD == AU250
+	#define NUM_SLOTS 16
 #endif
 
 /*****************************************************************************/
@@ -516,9 +521,11 @@ int online_processing(float user_cpu, float kernel_cpu, float idle_cpu, const mo
 
 		print_debug("[ONLINE] Online info -> Written %d/%d kernels from [SLOT #%d]\n", num_kernels_written, num_kernels_in_slot, i);
 		print_debug("[ONLINE] Online info -> Kept %d/%d kernels from [SLOT #%d]\n", kernels_to_keep, num_kernels_in_slot, i);
-
+		
+		#if TRACES_RAM
 		// Print usefull information
 		print_debug("[ONLINE] Online info -> Total num_bytes = %d\n\n",online_ram_num_bytes);
+		#endif
 	}
 
 	// Mark the online file size (ram mode) / Close the file (file mode)
@@ -1012,6 +1019,9 @@ void* monitoring_thread(void *arg) {
 
 	// Timers
 	struct timespec schedule_timer, aux_timer;
+	#ifdef AU250
+	struct timespec monitor_timer;
+	#endif
 
 	// Shared memory handling variables (ram mode) / Monitor traces file handling variables (file mode)
 	#if TRACES_RAM
@@ -1133,8 +1143,19 @@ void* monitoring_thread(void *arg) {
 		// Start monitor
 		monitor_start();
 
+		
+		#ifdef AU250
+		//Wait 100ms
+		clock_gettime(CLOCK_MONOTONIC, &monitor_timer);							//Get the current time
+		update_timer_ms(&monitor_timer,100);								//Add 100 ms (TODO: Create a macro)
+		clock_nanosleep(CLOCK_MONOTONIC,TIMER_ABSTIME,&(monitor_timer), NULL);	//Wait fot the timer
+		
+		// Monitor stop 
+		monitor_stop();
+		#else
 		// Wait for the monitor interrupt
 		monitor_wait();
+		#endif
 
 		// Log end of the monitorization
 		clock_gettime(CLOCK_MONOTONIC, &aux_timer);
@@ -1143,6 +1164,7 @@ void* monitoring_thread(void *arg) {
 		// Read number of power consupmtion and traces measurements stored in the BRAMS
 		unsigned int number_power_samples = monitor_get_number_power_measurements();
 		unsigned int number_traces_samples = monitor_get_number_traces_measurements();
+		#ifndef AU250
 		// Check errors
 		// TODO: If the errors surpass a threadhold, invalidate the measurement and reconfigure ADC
 		unsigned int number_power_errors = monitor_get_power_errors();
@@ -1153,6 +1175,7 @@ void* monitoring_thread(void *arg) {
 			exit(1);
 			goto monitor_err;
 		}
+		#endif
 		if(monitor_read_traces(number_traces_samples + number_traces_samples%4) != 0) {
 			print_error("[MONITOR] Error reading traces\n\r");
 			exit(1);
@@ -1236,7 +1259,7 @@ void* monitoring_thread(void *arg) {
 
 		// Clean monitor brams and counters
 		monitor_clean();
-
+		#ifndef AU250
 		// Check errors
 		// TODO: If the errors surpass a threadhold, invalidate the measurement and reconfigure ADC
 		if(number_power_errors >= number_power_samples){
@@ -1244,6 +1267,7 @@ void* monitoring_thread(void *arg) {
 			// Reconfigure ADC just in case
 			monitor_config_2vref();
 		}
+		#endif
 
 		// Enqueue monitor data
 		enqueue_monitor(&monitor_info_queue, &monitor_window);
@@ -1522,7 +1546,7 @@ int main(int argc, char* argv[]) {
 	monitoring_mode = MEASURE;
 	printf("[Monitor] -> [MEASURE]\n");
 	/*************************** Print Setup Parameters **********************************/
-	char str1[]  = "Board (PYNQ:1|ZCU:2)";
+	char str1[]  = "Board (PYNQ:1|ZCU:2|AU250:3)";
 	char str2[]  = "Monitorization (1/0)";
 	char str3[]  = "Online Modeling (1/0)";
 	char str4[]  = "Execution Modes (1/0)";
@@ -1626,6 +1650,8 @@ int main(int argc, char* argv[]) {
 		monitor_setup(0);
 	#elif BOARD == PYNQ
 		monitor_setup(1);
+	#elif BOARD == AU250
+		monitor_setup(2);
 	#endif
 
 	#if MONITOR
@@ -1730,6 +1756,10 @@ int main(int argc, char* argv[]) {
 			aux_kernel_data.temp_id = i;
 			//aux_kernel_data.kernel_label = 3; // Always use crs kernel
 			aux_kernel_data.kernel_label = kernel_label_buffer[i];
+			#ifdef AU250
+			if (aux_kernel_data.kernel_label == 2)
+				aux_kernel_data.kernel_label = 0;
+			#endif
 			aux_kernel_data.num_executions = 2*num_executions_buffer[i];
 			aux_kernel_data.intended_arrival_time_ms = (long int)(inter_arrival_buffer[i]);
 			aux_kernel_data.slot_id = 0;
@@ -1753,6 +1783,9 @@ int main(int argc, char* argv[]) {
 			#elif BOARD == PYNQ
 			int tmp_cu[3] = {1,2,4}; 			// PYNQ
 			int rand_value = ((int)(rand()%3)); // PYNQ
+			#elif BOARD == AU250
+			int tmp_cu[5] = {1,2,4,8,16};       // AU250
+			int rand_value = ((int)(rand()%5)); // AU250
 			#endif
 			// aux_kernel_data.cu = 1;  // FIFO 8 acc/tarea no interaccion
 			// aux_kernel_data.cu = 1;  // FIFO 1 acc/tarea multiples tareas en paralelo

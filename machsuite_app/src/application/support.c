@@ -466,22 +466,28 @@ void monitor_setup(const int doble_reference_voltage) {
 
 	#if MONITOR
 
+	#ifndef AU250
     // Load Monitor overlay and driver
 	system("./setup_monitor/setup_monitor.sh");
+	#endif
 
 	// Monitor Init
 	monitor_init();
 
 	// Clean monitor hw
+	#ifndef AU250
 	monitor_stop();
+	#endif
 	monitor_clean();
 
+	#ifndef AU250
 	// Config Vref
 	if(doble_reference_voltage == 1)
 		monitor_config_2vref();
 	else
 		monitor_config_vref();
 
+	#endif
 	#endif
 }
 
@@ -496,14 +502,18 @@ void monitor_cleanup(void) {
 	#if MONITOR
 
 	// Clean monitor hw
+	#ifndef AU250
 	monitor_stop();
+	#endif
 	monitor_clean();
 
 	// Clean monitor setup
     monitor_exit();
-
-    // Load Monitor overlay and driver
+	
+	#ifndef AU250
+	// Load Monitor overlay and driver
 	system("./setup_monitor/remove_monitor.sh");
+	#endif
 
 	#endif
 }

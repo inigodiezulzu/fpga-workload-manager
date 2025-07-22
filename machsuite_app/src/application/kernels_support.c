@@ -242,7 +242,11 @@ static void _kernel_load_input(char **input_data, kernel_label_t kernel) {
 	#if ARTICO
 
     char in_file[40];
+	#ifdef AU250
+	sprintf(in_file, "../data/%s/input.data", _kernel_names[kernel]);
+	#else
 	sprintf(in_file, "data/%s/input.data", _kernel_names[kernel]);
+	#endif
 
 	*input_data = (char*)malloc(_kernel_input_size[kernel]);
 	if(*input_data == NULL) {
@@ -275,8 +279,12 @@ static void _kernel_load_reference(char **reference_data, kernel_label_t kernel)
 	#if ARTICO
 
     char check_file[40];
+	#ifdef AU250
+	sprintf(check_file, "../data/%s/check.data", _kernel_names[kernel]);
+	#else
 	sprintf(check_file, "data/%s/check.data", _kernel_names[kernel]);
-
+	#endif
+	
 	*reference_data = (char*)malloc(_kernel_input_size[kernel]);
 	if(*reference_data == NULL) {
 		print_error("Error en mmap data\n");
@@ -403,9 +411,9 @@ void kernel_result_validation(char **output_data, kernel_label_t kernel) {
  * @param online_queue_lock Array of online queues mutexes
  * @param aes_vargs Pointer to the kernel inputs and outputs buffers
  */
-void aes_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *aes_vargs) {
-
-	print_debug("Execution AES...\n");
+void aes_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *aes_vargs) {  
+	
+	print_debug("Execution AES... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
@@ -549,7 +557,8 @@ void aes_execution(kernel_data *kernel, queue_online *online_queue, pthread_mute
  */
 void bulk_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *bulk_vargs) {
 
-	print_debug("Execution BULK...\n");
+	print_debug("Execution BULK... -> slot#%d\n",kernel->slot_id);
+	
 	/* Execution */
 
 	#if ARTICO
@@ -688,7 +697,7 @@ void bulk_execution(kernel_data *kernel, queue_online *online_queue, pthread_mut
  */
 void crs_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *crs_vargs) {
 
-	print_debug("Execution CRS... executions = %d\n", kernel->num_executions);
+	print_debug("Execution CRS... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
@@ -839,9 +848,9 @@ void crs_execution(kernel_data *kernel, queue_online *online_queue, pthread_mute
  * @param online_queue_lock Array of online queues mutexes
  * @param kmp_vargs Pointer to the kernel inputs and outputs buffers
  */
-void kmp_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *kmp_vargs) {
-
-	print_debug("Execution KMP... executions = %d\n", kernel->num_executions);
+void kmp_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *kmp_vargs) {  
+	
+	print_debug("Execution KMP... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
@@ -1102,9 +1111,9 @@ void knn_execution(kernel_data *kernel, queue_online *online_queue, pthread_mute
  * @param online_queue_lock Array of online queues mutexes
  * @param merge_vargs Pointer to the kernel inputs and outputs buffers
  */
-void merge_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *merge_vargs) {
-
-	print_debug("Execution MERGE...\n");
+void merge_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *merge_vargs) {  
+	
+	print_debug("Execution MERGE... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
@@ -1219,9 +1228,9 @@ void merge_execution(kernel_data *kernel, queue_online *online_queue, pthread_mu
  * @param online_queue_lock Array of online queues mutexes
  * @param nw_vargs Pointer to the kernel inputs and outputs buffers
  */
-void nw_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *nw_vargs) {
-
-	print_debug("Execution NW...\n");
+void nw_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *nw_vargs) {  
+	
+	print_debug("Execution NW... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
@@ -1356,9 +1365,9 @@ void nw_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex
  * @param online_queue_lock Array of online queues mutexes
  * @param queue_vargs Pointer to the kernel inputs and outputs buffers
  */
-void queue_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *queue_vargs) {
-
-	print_debug("Execution QUEUE...\n");
+void queue_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *queue_vargs) {  
+	
+	print_debug("Execution QUEUE... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
@@ -1493,9 +1502,9 @@ void queue_execution(kernel_data *kernel, queue_online *online_queue, pthread_mu
  * @param online_queue_lock Array of online queues mutexes
  * @param stencil2d_vargs Pointer to the kernel inputs and outputs buffers
  */
-void stencil2d_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *stencil2d_vargs) {
-
-	print_debug("Execution STENCIL2D...\n");
+void stencil2d_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *stencil2d_vargs) {  
+	
+	print_debug("Execution STENCIL2D... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
@@ -1625,9 +1634,9 @@ void stencil2d_execution(kernel_data *kernel, queue_online *online_queue, pthrea
  * @param online_queue_lock Array of online queues mutexes
  * @param stencil3d_vargs Pointer to the kernel inputs and outputs buffers
  */
-void stencil3d_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *stencil3d_vargs) {
-
-	print_debug("Execution STENCIL3D...\n");
+void stencil3d_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *stencil3d_vargs) {  
+	
+	print_debug("Execution STENCIL3D... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
@@ -1757,9 +1766,9 @@ void stencil3d_execution(kernel_data *kernel, queue_online *online_queue, pthrea
  * @param online_queue_lock Array of online queues mutexes
  * @param strided_vargs Pointer to the kernel inputs and outputs buffers
  */
-void strided_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *strided_vargs) {
-
-	print_debug("Execution STRIDED...\n");
+void strided_execution(kernel_data *kernel, queue_online *online_queue, pthread_mutex_t *online_queue_lock, void *strided_vargs) {  
+	
+	print_debug("Execution STRIDED... -> slot#%d\n",kernel->slot_id);
 
 	/* Execution */
 
